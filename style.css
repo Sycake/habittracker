@@ -1,0 +1,100 @@
+/***************************************************
+ * 基础样式
+ ***************************************************/
+ body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+  }
+  
+  /***************************************************
+   * 容器
+   ***************************************************/
+  .page-container {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  .main-content {
+    flex: 2;
+    text-align: center;
+    background-color: #fff;
+    padding: 20px;
+    max-width: 800px;
+  }
+  
+  /***************************************************
+   * 新习惯输入区域
+   ***************************************************/
+  .new-event {
+    margin-bottom: 20px;
+  }
+  .new-event input {
+    padding: 8px;
+    width: 200px;
+    box-sizing: border-box;
+  }
+  .new-event button {
+    padding: 8px 12px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+  }
+  
+  /***************************************************
+   * 进度追踪模块 (单个习惯)
+   ***************************************************/
+  .weekly-progress {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #fafafa;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .weekly-progress h2 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .progress-bar {
+    width: 100%;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .progress-bar-fill {
+    height: 20px;
+    background-color: #76c7c0;
+    width: 0%;
+    transition: width 0.5s;
+  }
+  .progress-text {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 16px;
+  }
+  .days {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  .day {
+    text-align: center;
+    flex: 1;
+    margin: 0 5px;
+  }
+  .day label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  .day input[type="checkbox"] {
+    transform: scale(1.2);
+  }
+  
