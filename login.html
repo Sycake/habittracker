@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>登入頁面 - 習慣追踪</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f3f3f3;
+    }
+    .login-container {
+      background-color: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .login-container h1 {
+      margin-bottom: 1rem;
+    }
+    #loginBtn {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      background-color: #4285F4;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #loginBtn:hover {
+      background-color: #357ae8;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1>登入習慣追踪系統</h1>
+    <button id="loginBtn">使用 Google 登入</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC8IMOWmeOF9E6xAjTFW_u6ioyC8z4j7t0",
+      authDomain: "habit-tracker-8dc7c.firebaseapp.com",
+      projectId: "habit-tracker-8dc7c",
+      storageBucket: "habit-tracker-8dc7c.appspot.com",
+      messagingSenderId: "203345022635",
+      appId: "1:203345022635:web:9fc51c0ea40a631e38b1ee",
+      measurementId: "G-RHGS9550KB"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const provider = new GoogleAuthProvider();
+
+    document.getElementById('loginBtn').addEventListener('click', () => {
+      signInWithPopup(auth, provider)
+        .then(() => {
+          window.location.href = 'index.html'; // 登入後跳轉到主頁
+        })
+        .catch((error) => {
+          alert("登入失敗: " + error.message);
+          console.error(error);
+        });
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        window.location.href = 'index.html';
+      }
+    });
+  </script>
+</body>
+</html>
