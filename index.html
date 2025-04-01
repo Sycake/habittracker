@@ -11,7 +11,6 @@
       <h1>多习惯进度追踪</h1>
 
       <div id="authSection">
-        <button id="loginBtn">Google 登录</button>
         <button id="logoutBtn" style="display:none">登出</button>
         <p id="userInfo"></p>
       </div>
@@ -35,8 +34,7 @@
       serverTimestamp, getDocs, query, orderBy, where
     } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore.js";
     import {
-      getAuth, GoogleAuthProvider, signInWithPopup,
-      onAuthStateChanged, signOut
+      getAuth, onAuthStateChanged, signOut
     } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -52,26 +50,21 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth();
-    const provider = new GoogleAuthProvider();
 
-    const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const userInfo = document.getElementById('userInfo');
 
-    loginBtn.addEventListener('click', () => signInWithPopup(auth, provider));
-    logoutBtn.addEventListener('click', () => signOut(auth));
+    logoutBtn.addEventListener('click', () => {
+      signOut(auth).then(() => window.location.href = 'login.html');
+    });
 
     onAuthStateChanged(auth, (user) => {
-      if (user) {
-        userInfo.textContent = `当前用户：${user.displayName}`;
-        loginBtn.style.display = 'none';
+      if (!user) {
+        window.location.href = 'login.html';
+      } else {
+        userInfo.textContent = `当前用户：${user.email}`;
         logoutBtn.style.display = 'inline';
         loadHabits(user.uid);
-      } else {
-        userInfo.textContent = '';
-        loginBtn.style.display = 'inline';
-        logoutBtn.style.display = 'none';
-        document.getElementById('habitsContainer').innerHTML = '<p>请先登录查看习惯</p>';
       }
     });
 
