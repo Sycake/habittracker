@@ -2,196 +2,168 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Multi-Habit Weekly Progress Tracker with Data Record</title>
+  <title>Multi-Habit Weekly Progress Tracker with Auth</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="page-container">
     <div class="main-content">
       <h1>多习惯进度追踪</h1>
-      
+
+      <div id="authSection">
+        <button id="loginBtn">Google 登录</button>
+        <button id="logoutBtn" style="display:none">登出</button>
+        <p id="userInfo"></p>
+      </div>
+
       <!-- 添加新习惯区域 -->
       <div class="new-event">
         <input type="text" id="newHabitName" placeholder="输入习惯名称">
         <button id="addHabitBtn">添加习惯</button>
       </div>
-      
-      <!-- 习惯容器：页面加载时会把 Firestore 中已有的习惯显示在这里 -->
+
+      <!-- 习惯容器 -->
       <div id="habitsContainer"></div>
     </div>
   </div>
 
-  <!-- Firebase Firestore 代码 -->
+  <!-- Firebase Authentication + Firestore 代码 -->
   <script type="module">
-    // 导入 Firebase 模块
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
     import {
-      getFirestore,
-      collection,
-      addDoc,
-      updateDoc,
-      doc,
-      serverTimestamp,
-      getDocs,
-      query,
-      orderBy
+      getFirestore, collection, addDoc, updateDoc, doc,
+      serverTimestamp, getDocs, query, orderBy, where
     } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore.js";
+    import {
+      getAuth, GoogleAuthProvider, signInWithPopup,
+      onAuthStateChanged, signOut
+    } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-auth.js";
 
-    // TODO: 替换为你自己的 Firebase 配置
     const firebaseConfig = {
-        apiKey: "AIzaSyC8IMOWmeOF9E6xAjTFW_u6ioyC8z4j7t0",
-        authDomain: "habit-tracker-8dc7c.firebaseapp.com",
-        projectId: "habit-tracker-8dc7c",
-        storageBucket: "habit-tracker-8dc7c.firebasestorage.app",
-        messagingSenderId: "203345022635",
-        appId: "1:203345022635:web:9fc51c0ea40a631e38b1ee",
-        measurementId: "G-RHGS9550KB"
+      apiKey: "AIzaSyC8IMOWmeOF9E6xAjTFW_u6ioyC8z4j7t0",
+      authDomain: "habit-tracker-8dc7c.firebaseapp.com",
+      projectId: "habit-tracker-8dc7c",
+      storageBucket: "habit-tracker-8dc7c.appspot.com",
+      messagingSenderId: "203345022635",
+      appId: "1:203345022635:web:9fc51c0ea40a631e38b1ee",
+      measurementId: "G-RHGS9550KB"
     };
 
-    // 初始化 Firebase 和 Firestore
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth();
+    const provider = new GoogleAuthProvider();
 
-    /********* 页面加载时读取 Firestore 中已有的习惯 *********/
-    async function loadHabits() {
-      try {
-        // 以创建时间升序排序读取 habits 集合中的文档
-        const q = query(collection(db, 'habits'), orderBy('createdAt', 'asc'));
-        const snapshot = await getDocs(q);
-        
-        const habitsContainer = document.getElementById('habitsContainer');
-        habitsContainer.innerHTML = ''; // 清空容器
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userInfo = document.getElementById('userInfo');
 
-        snapshot.forEach((docSnap) => {
-          const habitData = docSnap.data();
-          const docId = docSnap.id;
+    loginBtn.addEventListener('click', () => signInWithPopup(auth, provider));
+    logoutBtn.addEventListener('click', () => signOut(auth));
 
-          // 创建习惯模块
-          const habitModule = createHabitProgress(habitData.name);
-          habitModule.dataset.docId = docId;
-          habitsContainer.appendChild(habitModule);
-
-          // 如果 Firestore 文档中存在 days 数组，回填复选框状态
-          if (habitData.days && Array.isArray(habitData.days)) {
-            const checkboxes = habitModule.querySelectorAll('.day input[type="checkbox"]');
-            habitData.days.forEach((dayStatus, index) => {
-              if (checkboxes[index]) {
-                checkboxes[index].checked = dayStatus;
-              }
-            });
-          }
-          // 更新进度显示（参数 false 表示更新UI但不再写入DB，避免重复写入）
-          updateHabitProgress(habitModule, false);
-        });
-      } catch (error) {
-        console.error("加载习惯数据出错：", error);
-      }
-    }
-
-    // 页面加载后调用 loadHabits()
-    window.addEventListener('load', loadHabits);
-
-    /********* 添加新习惯 *********/
-    async function saveNewHabit(habitName) {
-      try {
-        const docRef = await addDoc(collection(db, 'habits'), {
-          name: habitName,
-          progress: 0,
-          days: [false, false, false, false, false, false, false],
-          createdAt: serverTimestamp()
-        });
-        console.log("习惯记录已创建，文档ID：", docRef.id);
-        return docRef.id;
-      } catch (error) {
-        console.error("创建习惯记录出错：", error);
-      }
-    }
-
-    document.getElementById('addHabitBtn').addEventListener('click', async function() {
-      const habitNameInput = document.getElementById('newHabitName');
-      const habitName = habitNameInput.value.trim();
-      if (habitName) {
-        const docId = await saveNewHabit(habitName);
-        const habitModule = createHabitProgress(habitName);
-        habitModule.dataset.docId = docId;
-        document.getElementById('habitsContainer').appendChild(habitModule);
-        habitNameInput.value = '';
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        userInfo.textContent = `当前用户：${user.displayName}`;
+        loginBtn.style.display = 'none';
+        logoutBtn.style.display = 'inline';
+        loadHabits(user.uid);
+      } else {
+        userInfo.textContent = '';
+        loginBtn.style.display = 'inline';
+        logoutBtn.style.display = 'none';
+        document.getElementById('habitsContainer').innerHTML = '<p>请先登录查看习惯</p>';
       }
     });
 
-    /********* 生成习惯模块 & 更新进度 *********/
+    async function loadHabits(userId) {
+      try {
+        const q = query(collection(db, 'habits'), where("createdBy", "==", userId), orderBy('createdAt'));
+        const snapshot = await getDocs(q);
+        const habitsContainer = document.getElementById('habitsContainer');
+        habitsContainer.innerHTML = '';
+        snapshot.forEach((docSnap) => {
+          const habitData = docSnap.data();
+          const habitModule = createHabitProgress(habitData.name);
+          habitModule.dataset.docId = docSnap.id;
+          habitsContainer.appendChild(habitModule);
+          if (Array.isArray(habitData.days)) {
+            const checkboxes = habitModule.querySelectorAll('.day input');
+            habitData.days.forEach((d, i) => checkboxes[i].checked = d);
+          }
+          updateHabitProgress(habitModule, false);
+        });
+      } catch (err) {
+        console.error("加载习惯出错", err);
+      }
+    }
+
+    document.getElementById('addHabitBtn').addEventListener('click', async () => {
+      const user = auth.currentUser;
+      const nameInput = document.getElementById('newHabitName');
+      const name = nameInput.value.trim();
+      if (!user) return alert('请先登录');
+      if (!name) return;
+
+      const docRef = await addDoc(collection(db, 'habits'), {
+        name,
+        progress: 0,
+        days: [false, false, false, false, false, false, false],
+        createdAt: serverTimestamp(),
+        createdBy: user.uid
+      });
+
+      const habitModule = createHabitProgress(name);
+      habitModule.dataset.docId = docRef.id;
+      document.getElementById('habitsContainer').appendChild(habitModule);
+      nameInput.value = '';
+    });
+
     function createHabitProgress(habitName) {
       const container = document.createElement('div');
       container.className = 'weekly-progress';
-      
       const title = document.createElement('h2');
       title.innerText = habitName;
-      container.appendChild(title);
-      
       const progressBar = document.createElement('div');
       progressBar.className = 'progress-bar';
-      const progressBarFill = document.createElement('div');
-      progressBarFill.className = 'progress-bar-fill';
-      progressBarFill.style.width = '0%';
-      progressBar.appendChild(progressBarFill);
-      container.appendChild(progressBar);
-      
+      const fill = document.createElement('div');
+      fill.className = 'progress-bar-fill';
+      fill.style.width = '0%';
+      progressBar.appendChild(fill);
       const progressText = document.createElement('p');
       progressText.className = 'progress-text';
       progressText.innerText = '进度：0%';
-      container.appendChild(progressText);
-      
       const daysContainer = document.createElement('div');
       daysContainer.className = 'days';
-      const dayNames = ['一','二','三','四','五','六','日'];
+      const labels = ['一','二','三','四','五','六','日'];
       for (let i = 0; i < 7; i++) {
-        const dayDiv = document.createElement('div');
-        dayDiv.className = 'day';
+        const day = document.createElement('div');
+        day.className = 'day';
         const label = document.createElement('label');
-        label.innerText = '周' + dayNames[i];
+        label.innerText = '周' + labels[i];
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
-        checkbox.addEventListener('change', function() {
-          // 当复选框状态变化时，更新当前习惯的进度，并更新 Firestore 数据
-          updateHabitProgress(container, true);
-        });
-        dayDiv.appendChild(label);
-        dayDiv.appendChild(checkbox);
-        daysContainer.appendChild(dayDiv);
+        checkbox.addEventListener('change', () => updateHabitProgress(container, true));
+        day.appendChild(label);
+        day.appendChild(checkbox);
+        daysContainer.appendChild(day);
       }
-      container.appendChild(daysContainer);
-      
+      container.append(title, progressBar, progressText, daysContainer);
       return container;
     }
-    
-    // 更新单个习惯模块的进度，并可选地更新 Firestore 记录
-    async function updateHabitProgress(habitContainer, shouldWriteToDB = true) {
-      const checkboxes = habitContainer.querySelectorAll('.day input[type="checkbox"]');
-      let checkedCount = 0;
-      const daysStatus = [];
-      checkboxes.forEach(box => {
-        const isChecked = box.checked;
-        daysStatus.push(isChecked);
-        if (isChecked) {
-          checkedCount++;
-        }
-      });
-      const progressPercentage = (checkedCount / checkboxes.length) * 100;
-      habitContainer.querySelector('.progress-bar-fill').style.width = progressPercentage + '%';
-      habitContainer.querySelector('.progress-text').innerText = '进度：' + Math.round(progressPercentage) + '%';
-      
-      const docId = habitContainer.dataset.docId;
-      if (docId && shouldWriteToDB) {
-        try {
-          await updateDoc(doc(db, 'habits', docId), {
-            progress: progressPercentage,
-            days: daysStatus,
-            updatedAt: serverTimestamp()
-          });
-          console.log("更新习惯记录，进度：" + progressPercentage + "%，days：" + JSON.stringify(daysStatus));
-        } catch (error) {
-          console.error("更新习惯记录出错：", error);
-        }
+
+    async function updateHabitProgress(container, writeToDB = true) {
+      const boxes = container.querySelectorAll('input[type="checkbox"]');
+      const days = Array.from(boxes).map(b => b.checked);
+      const count = days.filter(d => d).length;
+      const percent = (count / 7) * 100;
+      container.querySelector('.progress-bar-fill').style.width = percent + '%';
+      container.querySelector('.progress-text').innerText = '进度：' + Math.round(percent) + '%';
+      if (writeToDB && container.dataset.docId) {
+        await updateDoc(doc(db, 'habits', container.dataset.docId), {
+          days,
+          progress: percent,
+          updatedAt: serverTimestamp()
+        });
       }
     }
   </script>
